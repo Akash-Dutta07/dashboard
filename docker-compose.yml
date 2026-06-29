@@ -1,0 +1,38 @@
+# Backing services for the Real Data Dashboard.
+# Django still runs on the host (manage.py runserver) for now — these two
+# containers are the Postgres + Redis it talks to over localhost.
+# Bring them up with:  docker compose up -d
+#
+# No `version:` key on purpose — that field is the obsolete Compose v1 marker
+# and modern Docker Compose warns on it.
+
+services:
+  db:
+    image: postgres:16                  # pinned major version for dev/prod parity
+    container_name: phase4_db
+    environment:                        # names from hub.docker.com/_/postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}   # value lives in .env, never here
+    ports:
+      - "127.0.0.1:5432:5432"           # localhost-only; not exposed to the network
+    volumes:
+      - pgdata:/var/lib/postgresql/data # data survives `docker compose down`
+    healthcheck:                        # "is Postgres ready?" not just "did it start?"
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine               # alpine is safe for Redis; tiny image
+    container_name: phase4_redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data                 # persistence path from hub.docker.com/_/redis
+
+# Named volumes = storage that outlives the containers.
+volumes:
+  pgdata:
+  redisdata:
