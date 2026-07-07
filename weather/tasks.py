@@ -1,6 +1,7 @@
 import httpx
 from celery import shared_task
 from django.utils import timezone
+from django.core.mail import send_mail
 from .models import WeatherReading
 
 
@@ -27,4 +28,20 @@ def fetch_weather(city, latitude, longitude):
     ]
 
     WeatherReading.objects.bulk_create(readings, ignore_conflicts=True)
+
+    # bulk_create skips post_save, so the alert signal never fires here.
+    # Do the "is it hot?" check explicitly, where the batch happens.
+    hot = [r for r in readings if r.temperature > 40]
+    if hot:
+        peak = max(hot, key=lambda r: r.temperature)
+        send_mail(
+            subject=f"Heat alert: {city}",
+            message=(
+                f"{len(hot)} reading(s) over 40°C for {city}. "
+                f"Peak {peak.temperature}°C at {peak.recorded_at}."
+            ),
+            from_email="alerts@dashboard.com",
+            recipient_list=["admin@dashboard.com"],
+        )
+
     return f"Fetched {len(readings)} readings for {city}"
