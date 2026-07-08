@@ -1,17 +1,7 @@
-<!-- ============================================================
-     RAW STITCH OUTPUT — NOT YET WIRED.
-     Next session: wire Bucket 1 blanks + drop Bucket 2 extras.
-       Bucket 1 (FILL): London -> {{ city }}, 14°C -> {{ temperature }},
-                        table rows -> {% for reading in readings %}
-       Bucket 2 (DROP, user approved): condition/feels-like, humidity,
-                        wind speed, visibility (no data in WeatherReading).
-       Refresh Now button -> link to /fetch/ (name='trigger_fetch').
-       Chart comes AFTER (the "doorway to Design B" moment).
-     ============================================================ -->
 <!DOCTYPE html><html class="light dark" lang="en"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>Weather Dashboard - London</title>
+<title>Weather Dashboard - {{ latest.city }}</title>
 <!-- Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
@@ -50,9 +40,6 @@
             </div>
 <div class="flex items-center gap-stack-md">
 <div class="hidden md:flex gap-gutter">
-<a class="border-b-2 pb-1 font-body-lg text-body-lg text-white border-white" href="#">Forecast</a>
-<a class="hover:bg-tertiary-fixed dark:hover:bg-tertiary-container transition-colors duration-200 font-body-lg text-body-lg px-2 rounded-lg text-white" href="#">Maps</a>
-<a class="hover:bg-tertiary-fixed dark:hover:bg-tertiary-container transition-colors duration-200 font-body-lg text-body-lg px-2 rounded-lg text-white" href="#">Air Quality</a>
 </div>
 <button class="p-2 rounded-full hover:bg-tertiary-fixed transition-colors active:scale-95 duration-150">
 <span class="material-symbols-outlined text-primary" data-icon="refresh">refresh</span>
@@ -66,21 +53,21 @@
 <div class="bg-primary-container rounded-xl p-10 border border-outline-variant/30 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] flex flex-col items-center text-center overflow-hidden">
 <div class="relative z-10">
 <span class="font-label-caps text-label-caps text-on-primary-container font-semibold uppercase tracking-widest mb-stack-sm block">Current Conditions</span>
-<h1 class="font-headline-lg text-headline-lg md:text-[48px] md:leading-[56px] text-on-primary-container mb-stack-sm font-semibold">London</h1>
+<h1 class="font-headline-lg text-headline-lg md:text-[48px] md:leading-[56px] text-on-primary-container mb-stack-sm font-semibold">{{ latest.city }}</h1>
 <div class="flex items-center justify-center gap-4">
-<span class="font-display-temp text-display-temp text-on-primary-container font-bold">14°C</span>
-<span class="material-symbols-outlined text-[64px] text-on-primary-container" data-icon="partly_cloudy_day">partly_cloudy_day</span>
+<span class="font-display-temp text-display-temp text-on-primary-container font-bold">{{ latest.temperature }}°C</span>
 </div>
-<p class="font-body-lg text-body-lg text-on-primary-container font-medium mt-stack-sm">Mostly Cloudy • Feels like 12°C</p>
 </div>
 </div>
 </section>
 <!-- Primary Action Button -->
 <div class="flex justify-center mb-stack-lg">
+<a href="{% url 'trigger_fetch' %}">
 <button class="bg-primary hover:bg-primary-container text-on-primary px-8 py-3 rounded-full font-body-lg text-body-lg flex items-center gap-2 transition-all duration-200 active:scale-95 shadow-lg shadow-primary/20">
 <span class="material-symbols-outlined" data-icon="sync">sync</span>
                 Refresh Now
             </button>
+</a>
 </div>
 <!-- Hourly Readings Table -->
 <section class="mb-stack-lg">
@@ -94,62 +81,22 @@
 <tr class="text-on-surface-variant">
 <th class="px-gutter py-4 font-body-sm text-body-sm font-semibold">Time</th>
 <th class="px-gutter py-4 font-body-sm text-body-sm font-semibold">Temperature</th>
-<th class="px-gutter py-4 font-body-sm text-body-sm font-semibold hidden md:table-cell">Condition</th>
 </tr>
 </thead>
 <tbody class="divide-y divide-surface-container">
+{% for reading in readings %}
 <tr class="hover:bg-tertiary-fixed/30 transition-colors cursor-default">
-<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">10:00</td>
-<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">12°C</td>
-<td class="px-gutter py-5 font-body-sm text-body-sm text-on-surface-variant hidden md:table-cell">Cloudy</td>
+<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">{{ reading.recorded_at|date:"M j, H:i" }}</td>
+<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">{{ reading.temperature }}°C</td>
 </tr>
-<tr class="hover:bg-tertiary-fixed/30 transition-colors cursor-default">
-<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">11:00</td>
-<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">13°C</td>
-<td class="px-gutter py-5 font-body-sm text-body-sm text-on-surface-variant hidden md:table-cell">Light Rain</td>
+{% empty %}
+<tr>
+<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface-variant" colspan="2">No readings yet — hit “Refresh Now”.</td>
 </tr>
-<tr class="hover:bg-tertiary-fixed/30 transition-colors cursor-default bg-surface-container-low/50">
-<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">12:00</td>
-<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">14°C</td>
-<td class="px-gutter py-5 font-body-sm text-body-sm text-on-surface-variant hidden md:table-cell">Partly Cloudy</td>
-</tr>
-<tr class="hover:bg-tertiary-fixed/30 transition-colors cursor-default">
-<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">13:00</td>
-<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">14°C</td>
-<td class="px-gutter py-5 font-body-sm text-body-sm text-on-surface-variant hidden md:table-cell">Sunny Intervals</td>
-</tr>
-<tr class="hover:bg-tertiary-fixed/30 transition-colors cursor-default">
-<td class="px-gutter py-5 font-body-lg text-body-lg text-on-surface">14:00</td>
-<td class="px-gutter py-5 font-body-lg text-body-lg font-semibold text-primary">15°C</td>
-<td class="px-gutter py-5 font-body-sm text-body-sm text-on-surface-variant hidden md:table-cell">Clear Sky</td>
-</tr>
+{% endfor %}
 </tbody>
 </table>
 </div>
-</div>
-</section>
-<!-- Additional Insights Bento Grid -->
-<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-<div class="p-6 rounded-xl bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-<div class="flex items-center gap-2 mb-2">
-<span class="material-symbols-outlined text-secondary" data-icon="humidity_percentage">humidity_percentage</span>
-<span class="font-label-caps text-label-caps text-on-surface-variant">Humidity</span>
-</div>
-<div class="text-headline-md font-headline-md">64%</div>
-</div>
-<div class="p-6 rounded-xl bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-<div class="flex items-center gap-2 mb-2">
-<span class="material-symbols-outlined text-secondary" data-icon="air">air</span>
-<span class="font-label-caps text-label-caps text-on-surface-variant">Wind Speed</span>
-</div>
-<div class="text-headline-md font-headline-md">12 km/h</div>
-</div>
-<div class="p-6 rounded-xl bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-<div class="flex items-center gap-2 mb-2">
-<span class="material-symbols-outlined text-secondary" data-icon="visibility">visibility</span>
-<span class="font-label-caps text-label-caps text-on-surface-variant">Visibility</span>
-</div>
-<div class="text-headline-md font-headline-md">10 km</div>
 </div>
 </section>
 </main>
@@ -157,29 +104,8 @@
 <footer class="w-full mt-auto bg-transparent">
 <div class="flex flex-col md:flex-row justify-between items-center w-full py-stack-lg px-margin-x max-w-container-max mx-auto border-t border-outline-variant/10">
 <div class="text-body-sm font-body-sm text-tertiary mb-4 md:mb-0">
-                © 2024 Weather Dashboard. Minimal &amp; Precise.
+                © {% now "Y" %} Weather Dashboard. Minimal &amp; Precise.
             </div>
-<div class="flex gap-gutter">
-<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
-<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
-<a class="text-on-surface-variant font-label-caps text-label-caps hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">API Status</a>
-</div>
 </div>
 </footer>
-<script>
-        // Micro-interaction for the refresh button
-        document.querySelector('button.bg-primary').addEventListener('click', function() {
-            const icon = this.querySelector('.material-symbols-outlined');
-            icon.classList.add('animate-spin');
-            this.innerHTML = `<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span> Updating...`;
-
-            setTimeout(() => {
-                icon.classList.remove('animate-spin');
-                this.innerHTML = `<span class="material-symbols-outlined" data-icon="sync">sync</span> Refresh Now`;
-                // Add a small toast or notification logic here if needed
-            }, 1000);
-        });
-    </script>
-
-
 </body></html>
