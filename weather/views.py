@@ -1,22 +1,30 @@
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.core.cache import cache
 from .models import WeatherReading
 from .tasks import fetch_weather
 
 
 def dashboard(request):
     # The "tap that draws from the tank" — reads OUR database, never the API.
-    # ── Step 1: get the data ──
-    latest = WeatherReading.objects.order_by('-recorded_at').first()   # headline (1 row)
-    readings = WeatherReading.objects.order_by('-recorded_at')[:24]    # table (24 rows)
 
-    # ── Step 2: pack the bag (context) ──
-    context = {
-        'latest': latest,
-        'readings': readings,
-    }
+    # ── Step 1: glance at the sticky note (cache) ──
+    context = cache.get('dashboard_data')
 
-    # ── Step 3: render ──
+    if context is None:
+        # ── MISS: note is blank → walk to the kitchen (real DB queries) ──
+        latest = WeatherReading.objects.order_by('-recorded_at').first()   # headline (1 row)
+        readings = list(WeatherReading.objects.order_by('-recorded_at')[:24])  # table (24 rows)
+
+        context = {
+            'latest': latest,
+            'readings': readings,
+        }
+
+        # ── Write the note so the next visitors skip the walk (5 min) ──
+        cache.set('dashboard_data', context, 300)
+
+    # ── Step 2: render — from the note OR fresh ──
     return render(request, 'weather/dashboard.html', context)
 
 
