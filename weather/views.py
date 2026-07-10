@@ -1,6 +1,10 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.core.cache import cache
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from .models import WeatherReading
 from .tasks import fetch_weather
 
@@ -26,6 +30,31 @@ def dashboard(request):
 
     # ── Step 2: render — from the note OR fresh ──
     return render(request, 'weather/dashboard.html', context)
+
+
+class WeatherChartData(APIView):
+    # The "numbers-only address." No page — just data for the chart.
+
+    def get(self, request):
+        # ── Step 1: glance at THIS chart's own sticky note ──
+        data = cache.get('weather_London_24h')
+
+        if data is None:
+            # ── MISS: build the numbers from the DB ──
+            since = timezone.now() - timedelta(hours=24)
+            readings = (
+                WeatherReading.objects
+                .filter(city='London', recorded_at__gte=since)
+                .order_by('recorded_at')          # oldest → newest, so the line reads left→right
+                .values('recorded_at', 'temperature')   # keep ONLY these two columns
+            )
+            data = list(readings)                  # force the promise into concrete rows
+
+            # ── Write the note (5 min) ──
+            cache.set('weather_London_24h', data, 300)
+
+        # ── Step 2: hand back plain numbers ──
+        return Response(data)
 
 
 def trigger_fetch(request):

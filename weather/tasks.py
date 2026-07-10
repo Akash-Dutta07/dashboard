@@ -30,9 +30,10 @@ def fetch_weather(city, latitude, longitude):
 
     WeatherReading.objects.bulk_create(readings, ignore_conflicts=True)
 
-    # Fresh data just landed → the dashboard's sticky note is now stale.
-    # Tear it off so the next page-load rebuilds it from the new rows.
+    # Fresh data just landed → both sticky notes are now stale.
+    # Tear them off so the next page-load / chart-load rebuilds from new rows.
     cache.delete('dashboard_data')
+    cache.delete(f'weather_{city}_24h')   # matches the chart view's key contract
 
     # bulk_create skips post_save, so the alert signal never fires here.
     # Do the "is it hot?" check explicitly, where the batch happens.

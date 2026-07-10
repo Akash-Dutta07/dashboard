@@ -69,6 +69,17 @@
             </button>
 </a>
 </div>
+<!-- Temperature Trend Chart -->
+<section class="mb-stack-lg">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] overflow-hidden">
+<div class="px-gutter py-stack-md border-b border-surface-container">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase">Temperature Trend (last 24h)</h2>
+</div>
+<div class="p-gutter" style="height: 360px;">
+<canvas id="tempChart"></canvas>
+</div>
+</div>
+</section>
 <!-- Hourly Readings Table -->
 <section class="mb-stack-lg">
 <div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] overflow-hidden">
@@ -108,4 +119,31 @@
             </div>
 </div>
 </footer>
+<!-- Chart.js drawer, loaded from a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 1. Visit the numbers-only address.
+    fetch('/api/chart-data/')
+        .then(response => response.json())      // 2. read the reply as data
+        .then(rows => {                         // 3. rows = [{recorded_at, temperature}, ...]
+            const labels = rows.map(r => r.recorded_at.slice(11, 16));  // "15:00"
+            const temps  = rows.map(r => r.temperature);                // 24.2, 23.9, ...
+
+            // 4. hand the two lists to Chart.js and let it draw
+            new Chart(document.getElementById('tempChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: temps,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.3,
+                        fill: false
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        });
+</script>
 </body></html>
