@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Verify Email</title></head>
+<body style="font-family: sans-serif; max-width: 400px; margin: 60px auto;">
+
+    <h1>🔑 Enter your code</h1>
+
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Verify</button>
+    </form>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Code Sent</title></head>
+<body style="font-family: sans-serif; max-width: 400px; margin: 60px auto;">
+
+    <h1>📧 Code sent</h1>
+
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+
+    <p>Check your email (or your terminal) for the 6-digit code.</p>
+
+    <a href="{% url 'verify_otp' %}">Enter the code →</a>
+
+</body>
+</html>

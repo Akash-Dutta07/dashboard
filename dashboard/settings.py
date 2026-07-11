@@ -143,3 +143,16 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# ── Celery Beat: the "bot with a clock" ──
+# Each entry tells Beat: run THIS task, on THIS schedule, with THESE args.
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'fetch-london-weather': {
+        'task': 'weather.tasks.fetch_weather',   # the button Beat presses
+        'schedule': crontab(minute='*/2'),        # every 2 min (so you can SEE it)
+        # 'schedule': crontab(minute=0),          # ← swap to this for "every hour on the hour"
+        'args': ('London', 51.5, -0.1),           # same args you pass to .delay()
+    },
+}
