@@ -29,6 +29,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Debug Toolbar only appears for requests coming FROM these IPs (your own machine).
+INTERNAL_IPS = ['127.0.0.1']
+
 
 # Application definition
 
@@ -40,11 +43,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "debug_toolbar",
     "weather",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -136,6 +141,9 @@ CACHES = {
     }
 }
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# When @ratelimit(block=True) trips, show THIS view instead of a bare 403.
+RATELIMIT_VIEW = 'weather.views.ratelimited'
 
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://127.0.0.1:6379/0')

@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django_ratelimit.decorators import ratelimit
 from .models import WeatherReading
 from .forms import OTPVerifyForm
 from .tasks import fetch_weather
@@ -61,7 +62,16 @@ class WeatherChartData(APIView):
         return Response(data)
 
 
+def ratelimited(request, exception):
+    # Shown whenever ANY @ratelimit(block=True) trips. 429 = "Too Many Requests".
+    return HttpResponse(
+        'Too many requests. Please wait a bit before trying again. 🛑',
+        status=429,
+    )
+
+
 @login_required
+@ratelimit(key='user', rate='3/h', block=True)
 def send_otp(request):
     # ── Step 1: grab THIS user's OTP record (auto-made by the signal at signup) ──
     otp_record = request.user.otp        # via OneToOneField related_name='otp'
@@ -106,6 +116,7 @@ def verify_otp(request):
     return render(request, 'weather/verify_email.html', {'form': form})
 
 
+@ratelimit(key='ip', rate='5/m', block=True)
 def trigger_fetch(request):
     # This is the "Place Order" tap:
     # .delay() drops the job into Redis and returns instantly.
