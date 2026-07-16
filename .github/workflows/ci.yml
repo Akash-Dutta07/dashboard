@@ -11,6 +11,16 @@ jobs:
     name: Django system check
     runs-on: ubuntu-latest
 
+    # Config for the throwaway CI machine. Your .env is git-ignored and never
+    # reaches GitHub — correct, it guards your real database. CI doesn't need
+    # those values, it needs its own. These are deliberately fake: they let
+    # settings.py finish loading and protect nothing. Real secrets (e.g. a
+    # registry token) belong in GitHub Secrets, never here.
+    env:
+      POSTGRES_DB: dashboard
+      POSTGRES_USER: dashboard
+      POSTGRES_PASSWORD: postgres
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
