@@ -1,15 +1,78 @@
-# Backing services for the Real Data Dashboard.
-# Django still runs on the host (manage.py runserver) for now — these two
-# containers are the Postgres + Redis it talks to over localhost.
-# Bring them up with:  docker compose up -d
+# The Real Data Dashboard — the whole system.
+#
+#   web    → Django (gunicorn), serves pages          ┐
+#   worker → Celery, runs background jobs             ├─ all THREE run the SAME image
+#   beat   → Celery Beat, the clock that schedules    ┘
+#   db     → Postgres
+#   redis  → broker (for celery) + cache (for django)
+#
+# Five sibling containers on Compose's private network, finding each other by
+# service name (db, redis) — NOT 127.0.0.1, which inside a box means "this box".
+#
+# Bring it all up with:  docker compose up -d --build
 #
 # No `version:` key on purpose — that field is the obsolete Compose v1 marker
 # and modern Docker Compose warns on it.
 
+# ── Written once, used three times. ──
+# web, worker and beat are the same app, so they need the same config.
+# Copy-pasting it three times would mean three things to keep in sync — and one
+# of them would quietly rot. Defined here, referenced with *django-env below.
+x-django-env: &django-env
+  POSTGRES_DB: ${POSTGRES_DB}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: db                     # the sibling's name, not 127.0.0.1
+  REDIS_URL: redis://redis:6379/0       # likewise
+
+# Same idea: none of the three should start before the backing services are up.
+x-django-depends: &django-depends
+  db:
+    condition: service_healthy          # wait for pg_isready, not just "started"
+  redis:
+    condition: service_started
+
 services:
+  web:
+    build: .                            # build from the Dockerfile in this folder
+    container_name: phase4_web
+    ports:
+      - "127.0.0.1:8000:8000"           # localhost-only, same as the others
+    environment: *django-env
+    depends_on: *django-depends
+    # No `command:` — falls back to the Dockerfile's CMD (gunicorn).
+
+  worker:
+    build: .                            # SAME image as web. Same box, different job.
+    container_name: phase4_worker
+    # `command:` overrides the Dockerfile's CMD. The image holds your whole app,
+    # so it can just as easily be a worker as a web server.
+    #
+    # Note what's GONE: `--pool=solo`. That was a Windows workaround you needed
+    # for months. This box is Linux, so the Windows problem doesn't exist here.
+    command: celery -A dashboard worker --loglevel=info
+    environment: *django-env
+    depends_on: *django-depends
+    # No `ports:` — a worker serves no pages. Nothing needs to call IN to it.
+    # It only reaches OUT to redis for jobs.
+
+  beat:
+    build: .                            # SAME image again.
+    container_name: phase4_beat
+    command: celery -A dashboard beat --loglevel=info
+    environment: *django-env
+    depends_on: *django-depends
+    # Separate container from worker on purpose. `worker --beat` is a dev
+    # shortcut (and it flat-out refuses to run on Windows). Two processes IS
+    # the production pattern — you were already doing it right.
+
   db:
     image: postgres:16                  # pinned major version for dev/prod parity
     container_name: phase4_db
+    # NOT the same as django's env above, even though the names match.
+    # Here they mean "CREATE a database with this name/user/password".
+    # In django's env they mean "CONNECT to one". They must agree — but they
+    # are saying two different things.
     environment:                        # names from hub.docker.com/_/postgres
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}

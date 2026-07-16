@@ -11,6 +11,7 @@ dependencies = [
     "django-ratelimit>=4.1.0",
     "django-redis>=7.0.0",
     "djangorestframework>=3.17.1",
+    "gunicorn>=26.0.0",
     "httpx>=0.28.1",
     "psycopg[binary]>=3.3.4",
     "pyotp>=2.10.0",

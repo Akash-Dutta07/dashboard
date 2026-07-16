@@ -1,0 +1,31 @@
+# Same idea as .gitignore, but for the image: things NOT to copy into the box.
+# Everything you leave out makes the box smaller, faster, and safer.
+
+# SECRETS — never bake config into an image. The box gets its config handed
+# to it at startup from outside. This is THE rule.
+.env
+
+# Built on the host, for the host. Windows venv would break inside Linux.
+# uv sync rebuilds it correctly inside the box.
+.venv/
+
+# Git history — the box needs the code, not the story of how it got here.
+.git/
+.gitignore
+
+# Instruction sheet for running boxes. Useless INSIDE a box; nobody reads it there.
+docker-compose.yml
+
+# CI config — runs on GitHub, not in the box.
+.github/
+
+# Python litter
+__pycache__/
+*.py[oc]
+
+# Celery Beat's local schedule file — the box makes its own.
+celerybeat-schedule*
+
+# Personal teaching notes — not part of the app.
+CLAUDE.md
+NOTES_*.md
