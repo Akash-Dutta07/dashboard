@@ -8,8 +8,37 @@ on:
 
 jobs:
   check:
-    name: Django system check
+    name: Django checks + tests
     runs-on: ubuntu-latest
+
+    # ── The boxes the tests need — GitHub's version of your docker-compose.yml ──
+    # GitHub starts these little Postgres + Redis boxes before the steps run,
+    # then throws them away after. The tests reach them on localhost (127.0.0.1),
+    # which is exactly what settings.py already defaults to — so no host config
+    # is needed here.
+    services:
+      db:
+        image: postgres:16
+        env:                              # must match the job env below so Django can log in
+          POSTGRES_DB: dashboard
+          POSTGRES_USER: dashboard
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dashboard"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     # Config for the throwaway CI machine. Your .env is git-ignored and never
     # reaches GitHub — correct, it guards your real database. CI doesn't need
@@ -43,3 +72,8 @@ jobs:
       # uv run executes inside the environment uv just built.
       - name: Run Django system check
         run: uv run python manage.py check
+
+      # Runs the 4 robots in weather/tests.py against the Postgres + Redis boxes
+      # above. This is your safety net, now firing automatically on every push.
+      - name: Run tests
+        run: uv run python manage.py test
