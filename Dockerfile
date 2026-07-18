@@ -27,6 +27,16 @@ COPY . .
 # Put the venv's binaries on PATH so `gunicorn` is callable by name.
 ENV PATH="/app/.venv/bin:$PATH"
 
+# ─── Gather static files into the image so whitenoise can serve them. ───
+# collectstatic runs settings.py, which now DEMANDS a SECRET_KEY (fail-loud) —
+# but there is no .env during a build. So we hand it THROWAWAY values, alive
+# only for this one command (same idea as CI's fake secret). collectstatic
+# never touches the database, so fake DB creds are fine — they only let
+# settings.py finish loading.
+RUN SECRET_KEY=build-only-not-used \
+    POSTGRES_DB=x POSTGRES_USER=x POSTGRES_PASSWORD=x \
+    python manage.py collectstatic --noinput
+
 # Documentation only — says "this box speaks on 8000". Doesn't open anything.
 EXPOSE 8000
 

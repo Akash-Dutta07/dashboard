@@ -19,6 +19,7 @@
 # Copy-pasting it three times would mean three things to keep in sync — and one
 # of them would quietly rot. Defined here, referenced with *django-env below.
 x-django-env: &django-env
+  SECRET_KEY: ${SECRET_KEY}             # read from .env; settings now demands it
   POSTGRES_DB: ${POSTGRES_DB}
   POSTGRES_USER: ${POSTGRES_USER}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
