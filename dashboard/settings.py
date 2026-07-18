@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
-from decouple import config
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +22,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-nmtvt-ejpwligkgro30^i)t!poj%1gry+bg)3x1^%41#3!+%-+"
+# No default on purpose: if SECRET_KEY is missing, CRASH. There is no "safe"
+# fallback value for a secret key — a guessable default IS the vulnerability.
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# default=False = the SAFE value. If .env forgets DEBUG, we fall back to off,
+# never accidentally exposing tracebacks in production. cast=bool turns the
+# env string "True"/"False" into a real Python boolean.
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+# Csv() splits "a,b,c" from the env into ['a', 'b', 'c']. Only enforced when
+# DEBUG=False; the default covers local dev and the container.
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
 
 # Debug Toolbar only appears for requests coming FROM these IPs (your own machine).
 INTERNAL_IPS = ['127.0.0.1']

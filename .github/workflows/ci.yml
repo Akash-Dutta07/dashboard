@@ -17,6 +17,7 @@ jobs:
     # settings.py finish loading and protect nothing. Real secrets (e.g. a
     # registry token) belong in GitHub Secrets, never here.
     env:
+      SECRET_KEY: ci-throwaway-secret-guards-nothing
       POSTGRES_DB: dashboard
       POSTGRES_USER: dashboard
       POSTGRES_PASSWORD: postgres
